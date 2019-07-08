@@ -66,11 +66,11 @@ def create_midi(tempo, data, r, g, b, drums):
 
   song.addProgramChange(0, 0, 0, 0)
 
-  song.addProgramChange(0, 2, 0, 26)  # r
-  song.addProgramChange(0, 3, 0, 41)  # g
-  song.addProgramChange(0, 4, 0, 40)  # b
+  song.addProgramChange(0, 2, 0, 106)  # r
+  song.addProgramChange(0, 3, 0, 108)  # g
+  song.addProgramChange(0, 4, 0, 97)  # b
 
-  song.addProgramChange(0, 10, 0, 35)
+  song.addProgramChange(0, 10, 0, 52)
 
   grouped = [(note, sum(1 for i in g)) for note, g in groupby(data)]
   time = 0
@@ -87,7 +87,7 @@ def create_midi(tempo, data, r, g, b, drums):
   for note, duration in grouped:
     if type(note) is not int:
       for chord in note:
-        add_note(song, 0, chord, time, duration)
+        add_note(song, 0, chord, time, duration, channel=2)
     else:
       add_note(song, 0, note, time, duration, channel=2)
     time += duration
@@ -97,7 +97,7 @@ def create_midi(tempo, data, r, g, b, drums):
   for note, duration in grouped:
     if type(note) is not int:
       for chord in note:
-        add_note(song, 0, chord, time, duration)
+        add_note(song, 0, chord, time, duration, channel=3)
     else:
       add_note(song, 0, note, time, duration, channel=3)
     time += duration
@@ -107,20 +107,20 @@ def create_midi(tempo, data, r, g, b, drums):
   for note, duration in grouped:
     if type(note) is not int:
       for chord in note:
-        add_note(song, 0, chord, time, duration)
+        add_note(song, 0, chord, time, duration, channel=4)
     else:
       add_note(song, 0, note, time, duration, channel=4)
     time += duration
 
-  grouped = [(note, sum(1 for i in j)) for note, j in groupby(drums)]
-  time = 0
-  for note, duration in grouped:
-    if type(note) is not int:
-      for chord in note:
-        add_note(song, 0, chord, time, duration, channel=10)
-    else:
-      add_note(song, 0, note, time, duration, channel=10)
-    time += duration
+  # grouped = [(note, sum(1 for i in j)) for note, j in groupby(drums)]
+  # time = 0
+  # for note, duration in grouped:
+  #  if type(note) is not int:
+  #    for chord in note:
+  #      add_note(song, 0, chord, time, duration, channel=10)
+  #  else:
+  #    add_note(song, 0, note, time, duration, channel=10)
+  #  time += duration
 
   return song
 
@@ -279,8 +279,7 @@ def get_song_data(filename):
     print("r: %d, g: %d, b: %d" % (r, g, b))
 
     if r < 80 and g < 80 and b < 80:
-      if r > 30 and g > 30 and b > 30:
-        drumNotes.append(convert_rgb_to_note(r, g, b))
+      drumNotes.append(convert_rgb_to_note(r, g, b))
     else:
       # drumNotes.append(0)
       notes.append(convert_rgb_to_note(r, g, b))
