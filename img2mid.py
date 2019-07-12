@@ -6,8 +6,7 @@ import math
 import numpy as np
 
 A0_NOTE = 1
-C8_NOTE = 127
-
+C8_NOTE = 120
 
 frequency_mapping = [
     (69, 220.000000000000), (70, 224.974515832279), (71, 230.061512608947), (72, 235.263533685635), (73, 240.583179926894),
@@ -20,25 +19,50 @@ frequency_mapping = [
 
 def RGB2wav(r,g,b):
 
-  if g == 0.0 and b == 1.0:
-    wavelength = r*(350.-440.)+440.
-  elif r == 0.0 and b == 1.0:
-    wavelength = g*(490.-440.)+440.
-  elif r == 0.0 and g == 1.0:
-    wavelength = b*(490.-510.)+510.
-  elif b == 0.0 and g == 1.0:
-    wavelength = r*(580. - 510.)+510.
-    print (r,g,b,wavelength)
-  elif b == 0.0 and r == 1.0:
-    wavelength = g*(580.-645.)+645
-  elif b == 0.0 and r == 1.0 and g == 0.0:
-    wavelength = 645
-  elif b == 0.0 and g == 1.0 :
-    wavelength = r*(580. - 510.)+510.
-  else:
-    wavelength = 340
+  frequency = 440
 
-  return wavelength
+  # print(r, g, b)
+
+  if(r <= 82 and g == 0 and b == 0):
+    frequency = 349.2
+  
+  if r >= 82 and r <= 116 and g < 99 and b < 158:
+    frequency = 370
+  
+  if r > 116 and r <= 179 and g < 99 and b < 158:
+    frequency = 392
+  
+  if r > 179 and r <= 238 and g < 99 and b < 158:
+    frequency = 415
+  
+  if r > 238 and r <= 255 and g <= 99 and b < 158:
+    frequency = 440
+  
+  if r == 255 and g > 99 and g <= 236 and b < 158:
+    frequency = 466
+  
+  if r == 153 and g > 236 and g <= 255 and b < 158:
+    frequency = 493
+  
+  if r <= 40 and g <= 255 and b == 0:
+    frequency = 523
+  
+  if r == 0 and g == 255 and b <= 232:
+    frequency = 554
+  
+  if r == 0 and g >= 124 and g < 255 and b > 232:
+    frequency = 587
+  
+  if r <= 5 and g == 0 and b <= 255 and b > 234:
+    frequency = 622
+  
+  if r <= 69 and g == 0 and b <= 234 and b > 158:
+    frequency = 659
+  
+  if r <= 87 and g == 0 and b <= 158:
+    frequency = 698
+
+  return frequency
 
 def lerp(min, max, note):
   # return int(min + note * (max - min))
@@ -66,61 +90,77 @@ def create_midi(tempo, data, r, g, b, drums):
 
   song.addProgramChange(0, 0, 0, 0)
 
-  song.addProgramChange(0, 2, 0, 106)  # r
-  song.addProgramChange(0, 3, 0, 108)  # g
-  song.addProgramChange(0, 4, 0, 97)  # b
+  song.addProgramChange(0, 2, 0, 0)  # r // 106
+  song.addProgramChange(0, 3, 0, 0)  # g // 108
+  song.addProgramChange(0, 4, 0, 0)  # b
 
-  song.addProgramChange(0, 10, 0, 52)
+  song.addProgramChange(0, 10, 0, 34)
 
-  grouped = [(note, sum(1 for i in g)) for note, g in groupby(data)]
+  grouped = [(note) for note, g in groupby(data)]
   time = 0
   for note, duration in grouped:
     if type(note) is not int:
       for chord in note:
-        add_note(song, 0, chord, time, duration)
+        finalDuration = int(duration/30)
+        add_note(song, 0, chord, time+finalDuration, finalDuration)
     else:
+      finalDuration = duration
       add_note(song, 0, note, time, duration)
-    time += duration
+    time += finalDuration
 
-  grouped = [(note, sum(1 for i in j)) for note, j in groupby(r)]
+  mainTrackTime = time
+
+  grouped = [(note) for note, j in groupby(r)]
   time = 0
   for note, duration in grouped:
+    if time >= mainTrackTime:
+      break
     if type(note) is not int:
       for chord in note:
-        add_note(song, 0, chord, time, duration, channel=2)
+        finalDuration = int(duration/30)
+        add_note(song, 0, chord, time+finalDuration, duration, channel=2)
     else:
-      add_note(song, 0, note, time, duration, channel=2)
-    time += duration
+      finalDuration = int(math.sqrt(duration/5))
+      add_note(song, 0, note, time+finalDuration, finalDuration, channel=2)
+    time += finalDuration
 
-  grouped = [(note, sum(1 for i in j)) for note, j in groupby(g)]
+  grouped = [(note) for note, j in groupby(g)]
   time = 0
   for note, duration in grouped:
+    if time >= mainTrackTime:
+      break
     if type(note) is not int:
       for chord in note:
-        add_note(song, 0, chord, time, duration, channel=3)
+        finalDuration = int(duration/30)
+        add_note(song, 0, chord, time+finalDuration, duration, channel=3)
     else:
-      add_note(song, 0, note, time, duration, channel=3)
-    time += duration
+      finalDuration = int(math.sqrt(duration/5))
+      add_note(song, 0, note, time+finalDuration, finalDuration, channel=3)
+    time += finalDuration
 
-  grouped = [(note, sum(1 for i in j)) for note, j in groupby(b)]
+  grouped = [(note) for note, j in groupby(b)]
   time = 0
   for note, duration in grouped:
+    if time >= mainTrackTime:
+      break
     if type(note) is not int:
       for chord in note:
-        add_note(song, 0, chord, time, duration, channel=4)
+        finalDuration = int(duration/30)
+        add_note(song, 0, chord, time+finalDuration, finalDuration, channel=4)
     else:
-      add_note(song, 0, note, time, duration, channel=4)
-    time += duration
+      finalDuration = int(math.sqrt(duration/5))
+      add_note(song, 0, note, time+finalDuration, finalDuration, channel=4)
+    time += finalDuration
 
-  # grouped = [(note, sum(1 for i in j)) for note, j in groupby(drums)]
-  # time = 0
-  # for note, duration in grouped:
-  #  if type(note) is not int:
-  #    for chord in note:
-  #      add_note(song, 0, chord, time, duration, channel=10)
-  #  else:
-  #    add_note(song, 0, note, time, duration, channel=10)
-  #  time += duration
+  grouped = [(note, sum(1 for i in j)) for note, j in groupby(drums)]
+  time = 0
+  for note, duration in grouped:
+   if type(note) is not int:
+     for chord in note:
+       add_note(song, 0, chord, time, duration, channel=10)
+   else:
+     add_note(song, 0, note, time, duration, channel=10)
+   time += duration
 
   return song
 
@@ -158,7 +198,7 @@ def get_image_portion(img, w, h, firstMethod=False):
     w, h = img.size
 
     xPixels = int(math.pow(w, 1/8))
-    yPixels = int(math.pow(h, 1/3))
+    yPixels = int(math.pow(h, 1/6))
 
     portions = []
     pixelArray = np.array(img)
@@ -235,7 +275,7 @@ def get_portion_rgb_mean(portions):
     rTotal = gTotal = bTotal = 0
     for j in range(len(portions[i])):
       r, g, b = portions[i][j]
-      print("r: %d, g: %d, b: %d" % (r, g, b))
+      # print("r: %d, g: %d, b: %d" % (r, g, b))
       rTotal = rTotal + r
       gTotal = gTotal + g
       bTotal = bTotal + b
@@ -244,6 +284,9 @@ def get_portion_rgb_mean(portions):
     portionColorMean.append([int(rTotal/meanCounter), int(gTotal/meanCounter), int(bTotal/meanCounter)])
 
   return portionColorMean
+
+def brightness (r=0, g=0, b=0):
+  return math.sqrt( 0.299*math.pow(r, 2) + 0.587*math.pow(g,2) + 0.114*math.pow(b,2) )
 
 def get_song_data(filename):
   try:
@@ -267,25 +310,44 @@ def get_song_data(filename):
   # print(red)
   # raise
 
-  print(medianRGBs)
+  #print(medianRGBs)
 
-  notes = redNotes = greenNotes = blueNotes = []
+  maxValues = np.amax(medianRGBs, axis=0)
+  minValues = np.amin(medianRGBs, axis=0)
+  print(maxValues)
+  print(minValues)
+
+  adjustment = 1
+  if(minValues[0] > 100 and minValues[1] > 100 and minValues[2] > 100):
+    adjustment = 0.45
+  elif((maxValues[0] - minValues[0]) > 70):
+    adjustment = 0.75
+
+  notes = []
+  redNotes = []
+  greenNotes = []
+  blueNotes = []
   drumNotes = []
   for rgb in medianRGBs:
-    r = int(rgb[0])
-    g = int(rgb[1])
-    b = int(rgb[2])
+    print(RGB2wav(rgb[0], rgb[1], rgb[2]))
+
+    r = int(rgb[0] * adjustment)
+    g = int(rgb[1] * adjustment)
+    b = int(rgb[2] * adjustment)
 
     print("r: %d, g: %d, b: %d" % (r, g, b))
+
+    #if(r == 0 and g == 0 and b == 0):
+    #  continue
 
     if r < 80 and g < 80 and b < 80:
       drumNotes.append(convert_rgb_to_note(r, g, b))
     else:
       # drumNotes.append(0)
-      notes.append(convert_rgb_to_note(r, g, b))
-      redNotes.append(min(int(r*0.7), 110))
-      greenNotes.append(min(int(g*0.7), 110))
-      blueNotes.append(min(int(b*0.7), 110))
+      notes.append([convert_rgb_to_note(r, g, b), brightness(r,g,b)])
+      redNotes.append([min(r, C8_NOTE), brightness(r=r)])
+      greenNotes.append([min(g, C8_NOTE), brightness(g=g)])
+      blueNotes.append([min(b, C8_NOTE), brightness(b=b)])
 
   drumNotes = drumNotes[0:len(notes)]
   print("notes: %d, drumNotes: %d" % (len(notes), len(drumNotes)))
