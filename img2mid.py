@@ -79,8 +79,8 @@ def convert_rgb_to_note(r, g, b):
   return lerp(A0_NOTE, C8_NOTE, int((r+g+b)/6.0))
 
 
-def add_note(song, track, pitch, time, duration, channel=0):
-  song.addNote(track, channel, pitch, time, duration, 100)
+def add_note(song, track, pitch, time, duration, channel=0, vol=100):
+  song.addNote(track, channel, pitch, time, duration, vol)
 
 
 def create_midi(tempo, data, r, g, b, drums):
@@ -96,70 +96,65 @@ def create_midi(tempo, data, r, g, b, drums):
 
   song.addProgramChange(0, 10, 0, 34)
 
-  grouped = [(note) for note, g in groupby(data)]
-  time = 0
-  for note, duration in grouped:
-    if type(note) is not int:
-      for chord in note:
-        finalDuration = int(duration/30)
-        add_note(song, 0, chord, time+finalDuration, finalDuration)
-    else:
-      finalDuration = duration
-      add_note(song, 0, note, time, duration)
-    time += finalDuration
-
-  mainTrackTime = time
-
   grouped = [(note) for note, j in groupby(r)]
   time = 0
-  for note, duration in grouped:
-    if time >= mainTrackTime:
-      break
+  for note, duration, volume in grouped:
+    #if time >= mainTrackTime:
+    #  break
     if type(note) is not int:
       for chord in note:
-        finalDuration = int(duration/30)
-        add_note(song, 0, chord, time+finalDuration, duration, channel=2)
+        add_note(song, 0, chord, time, duration, channel=2, vol=volume)
     else:
-      finalDuration = int(math.sqrt(duration/5))
-      add_note(song, 0, note, time+finalDuration, finalDuration, channel=2)
-    time += finalDuration
+      add_note(song, 0, note, time, duration, channel=2, vol=volume)
+    time += duration
 
   grouped = [(note) for note, j in groupby(g)]
   time = 0
-  for note, duration in grouped:
-    if time >= mainTrackTime:
-      break
+  for note, duration, volume in grouped:
+    #if time >= mainTrackTime:
+    #  break
     if type(note) is not int:
       for chord in note:
-        finalDuration = int(duration/30)
-        add_note(song, 0, chord, time+finalDuration, duration, channel=3)
+        add_note(song, 0, chord, time, duration, channel=3, vol=volume)
     else:
-      finalDuration = int(math.sqrt(duration/5))
-      add_note(song, 0, note, time+finalDuration, finalDuration, channel=3)
-    time += finalDuration
+      add_note(song, 0, note, time, duration, channel=3, vol=volume)
+    time += duration
 
   grouped = [(note) for note, j in groupby(b)]
   time = 0
-  for note, duration in grouped:
-    if time >= mainTrackTime:
+  for note, duration, volume in grouped:
+    #if time >= mainTrackTime:
+    #  break
+    if type(note) is not int:
+      for chord in note:
+        add_note(song, 0, chord, time, duration, channel=4, vol=volume)
+    else:
+      add_note(song, 0, note, time, duration, channel=4, vol=volume)
+    time += duration
+
+  
+  backgroundTime = time    
+  grouped = [(note) for note, g in groupby(data)]
+  time = 0
+  for note, duration, volume in grouped:
+    if time >= backgroundTime:
       break
     if type(note) is not int:
       for chord in note:
-        finalDuration = int(duration/30)
-        add_note(song, 0, chord, time+finalDuration, finalDuration, channel=4)
+        add_note(song, 0, chord, time, duration)
     else:
-      finalDuration = int(math.sqrt(duration/5))
-      add_note(song, 0, note, time+finalDuration, finalDuration, channel=4)
-    time += finalDuration
+      add_note(song, 0, note, time, duration)
+    time += duration
 
-  grouped = [(note, sum(1 for i in j)) for note, j in groupby(drums)]
+  #grouped = [(note, sum(1 for i in j)) for note, j in groupby(drums)]
+  grouped = [(note) for note, j in groupby(drums)]
   time = 0
-  for note, duration in grouped:
+  for note, duration, volume in grouped:
    if type(note) is not int:
      for chord in note:
-       add_note(song, 0, chord, time, duration, channel=10)
+       add_note(song, 0, chord, time, duration, channel=10, vol=volume)
    else:
-     add_note(song, 0, note, time, duration, channel=10)
+     add_note(song, 0, note, time, duration, channel=10, vol=volume)
    time += duration
 
   return song
@@ -286,7 +281,10 @@ def get_portion_rgb_mean(portions):
   return portionColorMean
 
 def brightness (r=0, g=0, b=0):
-  return math.sqrt( 0.299*math.pow(r, 2) + 0.587*math.pow(g,2) + 0.114*math.pow(b,2) )
+  return int(math.sqrt( 0.299*math.pow(r, 2) + 0.587*math.pow(g,2) + 0.114*math.pow(b,2)))
+
+def getDuration(brightness, variation=0.2):
+  return round(math.sqrt(brightness)*variation)
 
 def get_song_data(filename):
   try:
@@ -340,14 +338,16 @@ def get_song_data(filename):
     #if(r == 0 and g == 0 and b == 0):
     #  continue
 
+    duration = getDuration(brightness(r,g,b), 0.3)
+
     if r < 80 and g < 80 and b < 80:
-      drumNotes.append(convert_rgb_to_note(r, g, b))
+      drumNotes.append([convert_rgb_to_note(r, g, b), duration, 100])
     else:
       # drumNotes.append(0)
-      notes.append([convert_rgb_to_note(r, g, b), brightness(r,g,b)])
-      redNotes.append([min(r, C8_NOTE), brightness(r=r)])
-      greenNotes.append([min(g, C8_NOTE), brightness(g=g)])
-      blueNotes.append([min(b, C8_NOTE), brightness(b=b)])
+      notes.append([convert_rgb_to_note(r, g, b), duration, brightness(r,g,b)])
+      redNotes.append([min(r, C8_NOTE), getDuration(brightness(r=r), 0.2), brightness(r=r)])
+      greenNotes.append([min(g, C8_NOTE), getDuration(brightness(g=g), 0.2), brightness(g=g)])
+      blueNotes.append([min(b, C8_NOTE), getDuration(brightness(b=b), 0.2), brightness(b=b)])
 
   drumNotes = drumNotes[0:len(notes)]
   print("notes: %d, drumNotes: %d" % (len(notes), len(drumNotes)))
