@@ -64,7 +64,7 @@ def RGB2wav(r,g,b):
 
   return frequency
 
-def lerp(min, max, note):
+def getMidiNote(min, max, note):
   # return int(min + note * (max - min))
   if note > max:
     return max
@@ -75,8 +75,7 @@ def lerp(min, max, note):
 
 
 def convert_rgb_to_note(r, g, b):
-  return [lerp(A0_NOTE, C8_NOTE, int(r)), lerp(A0_NOTE, C8_NOTE, int(g)), lerp(A0_NOTE, C8_NOTE, int(b))]
-  return lerp(A0_NOTE, C8_NOTE, int((r+g+b)/6.0))
+  return [getMidiNote(A0_NOTE, C8_NOTE, int(r)), getMidiNote(A0_NOTE, C8_NOTE, int(g)), getMidiNote(A0_NOTE, C8_NOTE, int(b))]
 
 
 def add_note(song, track, pitch, time, duration, channel=0, vol=100):
@@ -99,8 +98,6 @@ def create_midi(tempo, data, r, g, b, drums):
   grouped = [(note) for note, j in groupby(r)]
   time = 0
   for note, duration, volume in grouped:
-    #if time >= mainTrackTime:
-    #  break
     if type(note) is not int:
       for chord in note:
         add_note(song, 0, chord, time, duration, channel=2, vol=volume)
@@ -111,8 +108,6 @@ def create_midi(tempo, data, r, g, b, drums):
   grouped = [(note) for note, j in groupby(g)]
   time = 0
   for note, duration, volume in grouped:
-    #if time >= mainTrackTime:
-    #  break
     if type(note) is not int:
       for chord in note:
         add_note(song, 0, chord, time, duration, channel=3, vol=volume)
@@ -123,8 +118,6 @@ def create_midi(tempo, data, r, g, b, drums):
   grouped = [(note) for note, j in groupby(b)]
   time = 0
   for note, duration, volume in grouped:
-    #if time >= mainTrackTime:
-    #  break
     if type(note) is not int:
       for chord in note:
         add_note(song, 0, chord, time, duration, channel=4, vol=volume)
@@ -133,7 +126,7 @@ def create_midi(tempo, data, r, g, b, drums):
     time += duration
 
   
-  backgroundTime = time    
+  backgroundTime = time
   grouped = [(note) for note, g in groupby(data)]
   time = 0
   for note, duration, volume in grouped:
@@ -150,12 +143,14 @@ def create_midi(tempo, data, r, g, b, drums):
   grouped = [(note) for note, j in groupby(drums)]
   time = 0
   for note, duration, volume in grouped:
-   if type(note) is not int:
+    if time >= backgroundTime:
+      break
+    if type(note) is not int:
      for chord in note:
        add_note(song, 0, chord, time, duration, channel=10, vol=volume)
-   else:
-     add_note(song, 0, note, time, duration, channel=10, vol=volume)
-   time += duration
+    else:
+      add_note(song, 0, note, time, duration, channel=10, vol=volume)
+    time += duration
 
   return song
 
@@ -184,11 +179,6 @@ def get_image_channel(img):
   }
 
 def get_image_portion(img, w, h, firstMethod=False):
-  # if w > 1000 or h > 1000:
-  #   w = 800
-  #   h = 800
-  #   img.thumbnail((w, h), Image.ANTIALIAS)
-
   if firstMethod == False:
     w, h = img.size
 
@@ -202,20 +192,13 @@ def get_image_portion(img, w, h, firstMethod=False):
     tempArray = []
     while xArrayIterator < len(pixelArray):
       sumArray = pixelArray[xArrayIterator]
-      # arrays = pixelArray[xArrayIterator:xPixels]
-      # for array in arrays:
-      #   tempArray.append(np.mean(array, axis = 0))
-      # xArrayIterator = xArrayIterator + xPixels
 
       for i in range(xArrayIterator+1, xPixels):
         sumArray = sumArray + pixelArray[i]
       
       xArrayIterator = xArrayIterator + xPixels
-      #tempArray.append(sumArray / xPixels)
       tempArray.append(np.mean(sumArray, axis = 0))
 
-    #### a questo punto io ho tante striscie, già con il colore medio calcolato
-    #### dovrei splittare in verticale, così da avere più striscie, anche in orizzontale, no?
     portions = []
     for array in tempArray:
       yIterator = 0
@@ -227,11 +210,6 @@ def get_image_portion(img, w, h, firstMethod=False):
         if splitArray != []:
           portions.append(np.mean(splitArray, axis = 0))
         yIterator = yIterator + yPixels
-
-        # splitArray = array[yIterator:yPixels]
-        # print(splitArray)
-        # portions.append(np.mean(splitArray, axis = 0))
-        # yIterator = yIterator + yPixels
   else:
     wLimit = int(math.pow(w, 1/2))
     hLimit = int(math.pow(h, 1/2))
@@ -270,7 +248,6 @@ def get_portion_rgb_mean(portions):
     rTotal = gTotal = bTotal = 0
     for j in range(len(portions[i])):
       r, g, b = portions[i][j]
-      # print("r: %d, g: %d, b: %d" % (r, g, b))
       rTotal = rTotal + r
       gTotal = gTotal + g
       bTotal = bTotal + b
@@ -284,7 +261,7 @@ def brightness (r=0, g=0, b=0):
   return int(math.sqrt( 0.299*math.pow(r, 2) + 0.587*math.pow(g,2) + 0.114*math.pow(b,2)))
 
 def getDuration(brightness, variation=0.2):
-  return round(math.sqrt(brightness)*variation)
+  return max(round(math.sqrt(brightness)*variation), 0.5)
 
 def get_song_data(filename):
   try:
@@ -295,25 +272,10 @@ def get_song_data(filename):
   print ("Img %s loaded." % filename)
   w, h = im.size
 
-  # im = convert_to_bw(im)
-  # print(im.getpixel((100, 100))) # brightness 0 - 255
-  # raise
   medianRGBs = get_image_portion(im, w, h, False)
-  #medianRGBs = get_portion_rgb_mean(portions)
-
-  # channels = get_image_channel(im)
-
-  # red = get_image_portion(channels['red'], w, h)
-  # red = get_image_portion(im, w, h)
-  # print(red)
-  # raise
-
-  #print(medianRGBs)
 
   maxValues = np.amax(medianRGBs, axis=0)
   minValues = np.amin(medianRGBs, axis=0)
-  print(maxValues)
-  print(minValues)
 
   adjustment = 1
   if(minValues[0] > 100 and minValues[1] > 100 and minValues[2] > 100):
@@ -327,23 +289,16 @@ def get_song_data(filename):
   blueNotes = []
   drumNotes = []
   for rgb in medianRGBs:
-    print(RGB2wav(rgb[0], rgb[1], rgb[2]))
 
     r = int(rgb[0] * adjustment)
     g = int(rgb[1] * adjustment)
     b = int(rgb[2] * adjustment)
-
-    print("r: %d, g: %d, b: %d" % (r, g, b))
-
-    #if(r == 0 and g == 0 and b == 0):
-    #  continue
 
     duration = getDuration(brightness(r,g,b), 0.3)
 
     if r < 80 and g < 80 and b < 80:
       drumNotes.append([convert_rgb_to_note(r, g, b), duration, 100])
     else:
-      # drumNotes.append(0)
       notes.append([convert_rgb_to_note(r, g, b), duration, brightness(r,g,b)])
       redNotes.append([min(r, C8_NOTE), getDuration(brightness(r=r), 0.2), brightness(r=r)])
       greenNotes.append([min(g, C8_NOTE), getDuration(brightness(g=g), 0.2), brightness(g=g)])
@@ -353,7 +308,6 @@ def get_song_data(filename):
   print("notes: %d, drumNotes: %d" % (len(notes), len(drumNotes)))
 
   return (notes, redNotes, greenNotes, blueNotes, drumNotes)
-  return [convert_rgb_to_note(r, g, b) for r, g, b in medianRGBs]
 
 
 def convert(img_file, midi_file, play):
