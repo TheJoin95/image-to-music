@@ -1,6 +1,9 @@
-images
+images/*.jpg
+images/*.png
+images/*.jpeg
 mag
-midi
+midi/*.midi
+midi/*.mid
 music
 old_midiutil
 test
