@@ -3,6 +3,8 @@ images/*.png
 images/*.jpeg
 mag
 midi/*.midi
+midi/*.mp3
+converted/*.mp3
 midi/*.mid
 music
 old_midiutil
