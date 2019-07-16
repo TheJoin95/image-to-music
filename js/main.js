@@ -304,7 +304,7 @@ var Gallery = {
                   Gallery.paintings.push(plane);
               }
 
-              img.map.needsUpdate = true; //ADDED
+              // img.map.needsUpdate = true; //ADDED
           }(i))
       }
   },
