@@ -6,6 +6,7 @@ var Gallery = {
   mouse: new THREE.Vector3(),
   audio: new Audio(),
   audioListener: new THREE.AudioListener(),
+  textureLoader: new THREE.TextureLoader(),
   raycastSetUp: function () {
     Gallery.mouse.x = 0; //(0.5) * 2 - 1;
     Gallery.mouse.y = 0; //(0.5) * 2 + 1;
@@ -29,6 +30,14 @@ var Gallery = {
     Gallery.userBoxGeo = new THREE.BoxGeometry(2, 1, 2);
     Gallery.userBoxMat = new THREE.MeshBasicMaterial({ color: 0xeeee99, wireframe: true });
     Gallery.user = new THREE.Mesh(Gallery.userBoxGeo, Gallery.userBoxMat);
+
+    var texture = Gallery.textureLoader.load('/asset/volume.png');
+    texture.minFilter = THREE.LinearFilter;
+    Gallery.textureAnimation = new TextureAnimator(texture, 5, 6, 30, 60);
+    var img = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
+
+    Gallery.volumeIcon = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), img);
+    Gallery.volumeIcon.overdraw = true;
 
     //invisible since this will solely be used to determine the size
     //of the bounding box of our boxcollider for the user
@@ -91,6 +100,7 @@ var Gallery = {
           document.addEventListener('click', function() {
           	if (Gallery.controls.enabled === true) {
           		Gallery.sound.pause();
+              Gallery.scene.remove(Gallery.volumeIcon);
 							Gallery.raycaster.setFromCamera(Gallery.mouse.clone(), Gallery.camera);
 				      //calculate objects interesting ray
 				      Gallery.intersects = Gallery.raycaster.intersectObjects(Gallery.paintings);
@@ -98,6 +108,10 @@ var Gallery = {
 				        console.log(Gallery.intersects[0]);
 				        var audioSrc = Gallery.intersects[0].object.userData.audioSource;
 				        var position = Gallery.intersects[0].point;
+
+                Gallery.volumeIcon.position.set(Gallery.intersects[0].object.position.x, Gallery.intersects[0].object.position.y+Gallery.intersects[0].object.geometry.parameters.height*0.75, Gallery.intersects[0].object.position.z+0.2);
+                Gallery.volumeIcon.overdraw = true;                
+                Gallery.scene.add(Gallery.volumeIcon);
 
 								// load a sound and set it as the PositionalAudio object's buffer
 								var audioLoader = new THREE.AudioLoader();
@@ -229,8 +243,7 @@ var Gallery = {
     Gallery.worldLight = new THREE.AmbientLight(0xffffff);
     Gallery.scene.add(Gallery.worldLight);
 
-    var textureLoader = new THREE.TextureLoader();
-    textureLoader.load('./asset/floor-pattern.jpg', function (texture) {
+    Gallery.textureLoader.load('./asset/floor-pattern.jpg', function (texture) {
         texture.wrapS = THREE.RepeatWrapping;
         texture.wrapT = THREE.RepeatWrapping;
         texture.repeat.set(24, 24);
@@ -247,7 +260,7 @@ var Gallery = {
     Gallery.wallGroup = new THREE.Group();
     Gallery.scene.add(Gallery.wallGroup);
 
-    textureLoader.load('/asset/wall.jpg',
+    Gallery.textureLoader.load('/asset/wall.jpg',
       function (texture) {
         texture.wrapS = THREE.RepeatWrapping;
         texture.wrapT = THREE.RepeatWrapping;
@@ -280,7 +293,7 @@ var Gallery = {
       function (err) { console.error(err); }
   	);
 
-	  textureLoader.load('./asset/ceil.jpg',
+	  Gallery.textureLoader.load('./asset/ceil.jpg',
       function (texture) {
           texture.wrapS = THREE.RepeatWrapping;
           texture.wrapT = THREE.RepeatWrapping;
@@ -313,8 +326,8 @@ var Gallery = {
 	      // artwork.height = 350;
 	      // artwork.width = 450;
 
-	      var texture = THREE.ImageUtils.loadTexture(artwork.src);
-	      //var texture = textureLoader.load(artwork.src);
+	      //var texture = THREE.ImageUtils.loadTexture(artwork.src);
+	      var texture = Gallery.textureLoader.load(artwork.src);
 	      texture.minFilter = THREE.LinearFilter;
 	      var img = new THREE.MeshBasicMaterial({ map: texture });
 
@@ -359,6 +372,8 @@ var Gallery = {
       //for now
       Gallery.moveVelocity.y -= 9.8 * 7.0 * delta; // m/s^2 * kg * delta Time
       Gallery.moveVelocity.z -= Gallery.moveVelocity.z * 10.0 * delta;
+
+      Gallery.textureAnimation.update(1000 * delta);
 
       //need to apply velocity when keys are being pressed
       if (Gallery.moveForward) {
@@ -447,3 +462,44 @@ Gallery.pointerControls();
 Gallery.movement();
 Gallery.create();
 Gallery.render();
+
+
+
+
+function TextureAnimator(texture, tilesHoriz, tilesVert, numTiles, tileDispDuration) { 
+  // note: texture passed by reference, will be updated by the update function.
+    
+  this.tilesHorizontal = tilesHoriz;
+  this.tilesVertical = tilesVert;
+  // how many images does this spritesheet contain?
+  //  usually equals tilesHoriz * tilesVert, but not necessarily,
+  //  if there at blank tiles at the bottom of the spritesheet. 
+  this.numberOfTiles = numTiles;
+  texture.wrapS = texture.wrapT = THREE.RepeatWrapping; 
+  texture.repeat.set( 1 / this.tilesHorizontal, 1 / this.tilesVertical );
+
+  // how long should each image be displayed?
+  this.tileDisplayDuration = tileDispDuration;
+
+  // how long has the current image been displayed?
+  this.currentDisplayTime = 0;
+
+  // which image is currently being displayed?
+  this.currentTile = 0;
+    
+  this.update = function( milliSec )
+  {
+    this.currentDisplayTime += milliSec;
+    while (this.currentDisplayTime > this.tileDisplayDuration)
+    {
+      this.currentDisplayTime -= this.tileDisplayDuration;
+      this.currentTile++;
+      if (this.currentTile == this.numberOfTiles)
+        this.currentTile = 0;
+      var currentColumn = this.currentTile % this.tilesHorizontal;
+      texture.offset.x = currentColumn / this.tilesHorizontal;
+      var currentRow = Math.floor( this.currentTile / this.tilesHorizontal );
+      texture.offset.y = currentRow / this.tilesVertical;
+    }
+  };
+}   
