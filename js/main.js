@@ -109,8 +109,13 @@ var Gallery = {
 				        var audioSrc = Gallery.intersects[0].object.userData.audioSource;
 				        var position = Gallery.intersects[0].point;
 
-                Gallery.volumeIcon.position.set(Gallery.intersects[0].object.position.x, Gallery.intersects[0].object.position.y+Gallery.intersects[0].object.geometry.parameters.height*0.75, Gallery.intersects[0].object.position.z+0.2);
-                Gallery.volumeIcon.overdraw = true;                
+                Gallery.volumeIcon.position.set(
+                  Gallery.intersects[0].object.position.x,
+                  Gallery.intersects[0].object.position.y + Gallery.intersects[0].object.geometry.parameters.height*0.75,
+                  Gallery.intersects[0].object.position.z + 0.02
+                );
+
+                Gallery.volumeIcon.overdraw = true;         
                 Gallery.scene.add(Gallery.volumeIcon);
 
 								// load a sound and set it as the PositionalAudio object's buffer
