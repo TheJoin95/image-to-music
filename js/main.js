@@ -31,7 +31,7 @@ var Gallery = {
     Gallery.userBoxMat = new THREE.MeshBasicMaterial({ color: 0xeeee99, wireframe: true });
     Gallery.user = new THREE.Mesh(Gallery.userBoxGeo, Gallery.userBoxMat);
 
-    var texture = Gallery.textureLoader.load('/asset/volume.png');
+    var texture = Gallery.textureLoader.load('./asset/volume.png');
     texture.minFilter = THREE.LinearFilter;
     Gallery.textureAnimation = new TextureAnimator(texture, 5, 6, 30, 60);
     var img = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
@@ -273,7 +273,7 @@ var Gallery = {
     Gallery.wallGroup = new THREE.Group();
     Gallery.scene.add(Gallery.wallGroup);
 
-    Gallery.textureLoader.load('/asset/wall.jpg',
+    Gallery.textureLoader.load('./asset/wall.jpg',
       function (texture) {
         texture.wrapS = THREE.RepeatWrapping;
         texture.wrapT = THREE.RepeatWrapping;
