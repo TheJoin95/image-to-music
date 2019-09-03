@@ -39,6 +39,13 @@ var Gallery = {
     Gallery.volumeIcon = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), img);
     Gallery.volumeIcon.overdraw = true;
 
+    Gallery.volumeIconLeftWall = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), img);
+    Gallery.volumeIconLeftWall.overdraw = true;
+    var mS = (new THREE.Matrix4()).identity();
+    mS.elements[0] = -1;
+    mS.elements[10] = -1;
+    Gallery.volumeIconLeftWall.geometry.applyMatrix(mS);
+
     //invisible since this will solely be used to determine the size
     //of the bounding box of our boxcollider for the user
     Gallery.user.visible = false;
@@ -100,7 +107,6 @@ var Gallery = {
           document.addEventListener('click', function() {
           	if (Gallery.controls.enabled === true) {
           		Gallery.sound.pause();
-              Gallery.scene.remove(Gallery.volumeIcon);
 							Gallery.raycaster.setFromCamera(Gallery.mouse.clone(), Gallery.camera);
 				      //calculate objects interesting ray
 				      Gallery.intersects = Gallery.raycaster.intersectObjects(Gallery.paintings);
@@ -109,20 +115,22 @@ var Gallery = {
 				        var audioSrc = Gallery.intersects[0].object.userData.audioSource;
 				        var position = Gallery.intersects[0].point;
 
-                Gallery.volumeIcon.position.set(
+                var volumeIcon = (Gallery.intersects[0].object.position.z > 0) ? Gallery.volumeIconLeftWall : Gallery.volumeIcon;
+                Gallery.scene.remove(Gallery.volumeIcon);
+                Gallery.scene.remove(Gallery.volumeIconLeftWall);
+
+                volumeIcon.position.set(
                   Gallery.intersects[0].object.position.x,
                   Gallery.intersects[0].object.position.y + Gallery.intersects[0].object.geometry.parameters.height*0.75,
                   Gallery.intersects[0].object.position.z + 0.02
-                );
-
-                Gallery.volumeIcon.overdraw = true;         
-                Gallery.scene.add(Gallery.volumeIcon);
+                );    
 
 								// load a sound and set it as the PositionalAudio object's buffer
 								var audioLoader = new THREE.AudioLoader();
 								audioLoader.load( audioSrc, function( buffer ) {
 									Gallery.sound.setBuffer(buffer);
 									Gallery.sound.setRefDistance(2);
+                  Gallery.scene.add(volumeIcon);
 									Gallery.sound.play();
 								});
 
