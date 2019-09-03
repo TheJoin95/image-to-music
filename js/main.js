@@ -360,7 +360,7 @@ var Gallery = {
 
 	          plane.userData = {
 	          	test: true,
-	          	audioSource: '/converted/' + index.toString() + '.mp3'
+	          	audioSource: './converted/' + index.toString() + '.mp3'
 	          }; // data relative to: music & information
 	          Gallery.scene.add(plane);
 	          Gallery.paintings.push(plane);
